@@ -2,46 +2,56 @@
 
 namespace Wappr\Doap;
 
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
-class Deploy extends Command
+class Deploy
 {
-    protected static $defaultName = 'app:deploy';
+    protected $droplets;
 
-    protected $tag;
+    protected $command;
 
-    protected function configure()
+    protected $output = [];
+
+    public function __construct(DropletsInterface $droplets, DeployCommandInterface $command)
     {
-        $this->addArgument('tag', InputArgument::REQUIRED);
-        $this->addArgument('user', InputArgument::REQUIRED);
+        $this->droplets = $droplets;
+        $this->command = $command;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    public function now()
     {
-        $client = new \DigitalOceanV2\Client();
-        $client->authenticate(getenv('DO_TOKEN'));
-
-        $droplets = [];
-        try {
-            $droplets = $client->droplet()->getAll($input->getArgument('tag'));
-        } catch(\Throwable $e) {
-            $output->writeln($e->getMessage());
-
-            return Command::FAILURE;
+        foreach($this->droplets->ipAddresses() as $id => $ip) {
+            $this->process($id, $ip);
         }
+    }
 
-        foreach($droplets as $droplet) {
-            $ip = $droplet->networks[1]->ipAddress;
+    public function output()
+    {
+        return $this->output;
+    }
 
-            $process = new Process(['ssh', $input->getArgument('user').'@'.$ip, './deploy.sh']);
+    protected function process($id, $ip)
+    {
+        foreach($this->command->commands() as $command) {
+            $cmd = implode(' ', [
+                $this->command->ssh(),
+                '-i ' . $this->command->key(),
+                '-o StrictHostKeyChecking=no',
+                '-o UserKnownHostsFile=/dev/null',
+                $this->command->user().'@'.$ip,
+                '-p ' . $this->command->port(),
+                '"' . $command . '"'
+            ]);
+            $process = Process::fromShellCommandline($cmd);
+
             $process->run();
-            echo $process->getOutput();
-        }
 
-        return Command::SUCCESS;
+            if (!$process->isSuccessful()) {
+                throw new ProcessFailedException($process);
+            }
+
+            $this->output[$id] = $process->getOutput();
+        }
     }
 }
