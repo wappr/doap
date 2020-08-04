@@ -16,7 +16,14 @@ class DeployCommand implements DeployCommandInterface
     /**
      * @var string
      */
+    protected $port = '22';
+
+    /**
+     * @var string
+     */
     protected $user;
+
+    protected $key;
 
     /**
      * @var array
@@ -28,18 +35,32 @@ class DeployCommand implements DeployCommandInterface
      * @param string $user
      * @param array $commands
      */
-    public function __construct(string $user, array $commands = [])
+    public function __construct(string $user, string $key, array $commands = [])
     {
         $this->user = $user;
+        $this->key = $key;
         $this->commands = $commands;
     }
 
     /**
      * @param string $user
+     * @return $this
      */
     public function setUser(string $user)
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function key()
+    {
+        return $this->key;
+    }
+
+    public function user()
+    {
+        return $this->user;
     }
 
     /**
@@ -67,5 +88,21 @@ class DeployCommand implements DeployCommandInterface
     public function ssh()
     {
         return $this->ssh;
+    }
+
+    /**
+     * @param string $port
+     * @return $this
+     */
+    public function setPort(string $port)
+    {
+        $this->port = $port;
+
+        return $this;
+    }
+
+    public function port()
+    {
+        return $this->port;
     }
 }

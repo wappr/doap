@@ -16,4 +16,13 @@ final class CommandTest extends TestCase
         $command = (new Wappr\Doap\DeployCommand('root', ['deploy.sh']));
         $this->assertIsArray($command->commands());
     }
+
+    public function testStuff()
+    {
+        $cmd = new \Wappr\Doap\DeployCommand('root', ['deploy.sh', 'echo "hi"']);
+        $droplets = new \Wappr\Doap\Droplets('key');
+        $droplets->getAll('webservers');
+        $deployer = new \Wappr\Doap\Deploy();
+        $deployer->deploy($droplets, $cmd);
+    }
 }
