@@ -21,8 +21,8 @@ class Deploy
 
     public function now()
     {
-        foreach($this->droplets->ipAddresses() as $ip) {
-            $this->process($ip);
+        foreach($this->droplets->ipAddresses() as $id => $ip) {
+            $this->process($id, $ip);
         }
     }
 
@@ -31,7 +31,7 @@ class Deploy
         return $this->output;
     }
 
-    protected function process($ip)
+    protected function process($id, $ip)
     {
         foreach($this->command->commands() as $command) {
             $cmd = implode(' ', [
@@ -51,7 +51,7 @@ class Deploy
                 throw new ProcessFailedException($process);
             }
 
-            $this->output[] = $process->getOutput();
+            $this->output[$id] = $process->getOutput();
         }
     }
 }

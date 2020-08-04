@@ -16,8 +16,7 @@
     },
     "require": {
         "guzzlehttp/guzzle": "^7.0",
-        "symfony/process": "^5.1",
-        "toin0u/digitalocean-v2": "^3.0"
+        "symfony/process": "^5.1"
     },
     "config": {
         "sort-packages": true

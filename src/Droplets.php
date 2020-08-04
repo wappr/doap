@@ -2,8 +2,7 @@
 
 namespace Wappr\Doap;
 
-use DigitalOceanV2\Client;
-use DigitalOceanV2\Exception\ExceptionInterface;
+use GuzzleHttp\Client;
 
 class Droplets implements DropletsInterface
 {
@@ -13,11 +12,13 @@ class Droplets implements DropletsInterface
 
     protected $tag;
 
+    protected $key;
+
     public function __construct(string $key, string $tag)
     {
-        $this->client = new Client;
-        $this->client->authenticate($key);
+        $this->client = new Client(['base_uri' => 'https://api.digitalocean.com/v2/']);
 
+        $this->key = $key;
         $this->tag = $tag;
     }
 
@@ -31,10 +32,10 @@ class Droplets implements DropletsInterface
 
         $ips = [];
 
-        foreach($this->servers as $server) {
-            foreach($server->networks as $network) {
-                if($network->type == 'public' && $network->version == 4) {
-                    $ips[] = $network->ipAddress;
+        foreach($this->servers->droplets as $server) {
+            foreach($server->networks->v4 as $ip) {
+                if($ip->type == 'public') {
+                    $ips[$server->id] = $ip->ip_address;
                 }
             }
         }
@@ -47,6 +48,15 @@ class Droplets implements DropletsInterface
      */
     protected function getAll()
     {
-        $this->servers = $this->client->droplet()->getAll($this->tag);
+        $response = $this->client->get(
+            'droplets',
+            [
+                'auth' => [$this->key, ':'],
+                'query' => [
+                    'tag_name' => $this->tag
+                ]
+            ]
+        );
+        $this->servers = json_decode((string) $response->getBody());
     }
 }
